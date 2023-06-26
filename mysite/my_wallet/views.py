@@ -8,105 +8,132 @@ from django.db.models import Sum
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
+from rest_framework import viewsets
+from django.views.decorators.csrf import csrf_exempt
 
 from django.http import HttpResponse, JsonResponse
+
 '''
-@api_view(['GET'])
-def getData2(request):
-       investors = Investor.objects.all()
-       serializer = InvestorSerializer(investors, many=True)
-       return Response(serializer.data)
+@csfr_exempt
+def investor_list(request):
+     if request.method == 'GET':
+          investors = Investor.objects.all()
+          serializer = InvestorSerializer(investors, many=True, context={'request': request})
+          return JsonResponse(serializer.data, safe=False)
+     elif request.method == 'POST':
+          data = JSONParser().parse(request)
+          serializer = InvestorSerializer(data=data)
+          if serializer.is_valid():
+               serializer.save()
+               return JsonResponse(serializer.data, status=201)
+          return JsonResponse(serializer.erros, status=400)
 
-@api_view(['POST'])
-def addInvestor(request):
-       serializer = InvestorSerializer(data=request.data)
-       if serializer.is_valid():
-              serializer.save()
-       return Response(serializer.data)
-'''
+@csrf_exempt
+def investor_detail(request, pk):
+     try:
+          investor = Investor.objects.get(pk=pk)
+     except Investor.DoesNotExist:
+        return HttpResponse(status=404)
 
+     if request.method == 'GET':
+        serializer = InvestorSerializer(investor)
+        return JsonResponse(serializer.data)
 
-@api_view(['GET'])
-def getData(request):
-        stocks = Stock.objects.all()
-        serializer = StockSerializer(stocks, many=True, context={'request': request})
-        return JsonResponse(serializer.data, safe=Fa)
-
-   
-@api_view(['POST'])
-def addStock(request):
+     elif request.method == 'PUT':
         data = JSONParser().parse(request)
-        serializer = StockSerializer(data=data)
+        serializer = InvestorSerializer(investor, data=data) 
+
+     elif request.method == 'PUT':
+        data = JSONParser().parse(request)
+        serializer = InvestorSerializer(investor, data=data)
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
+            return JsonResponse(serializer.data)
+        return JsonResponse(serializer.erros, status=400)   
 
-@api_view(['GET'])
-def getData1(request):
-       transactions = Transaction.objects.all()
-       serializer = TransactionSerializer(transactions, many=True)
-       return Response(serializer.data)
+     elif request.method == 'DELETE':
+        investor.delete()
+        return HttpResponse(status=204)  
+'''
+@csrf_exempt
+def stock_list(request):
+     if request.method == 'GET':
+          stocks = Stock.objects.all()
+          serializer = StockSerializer(stocks, many=True, context={'request': request})
+          return JsonResponse(serializer.data, safe=False)
+     elif request.method == 'POST':
+          data = JSONParser().parse(request)
+          serializer = StockSerializer(data=data)
+          if serializer.is_valid():
+               serializer.save()
+               return JsonResponse(serializer.data, status=201)
+          return JsonResponse(serializer.erros, status=400)
 
-@api_view(['POST'])
-def addTransaction(request):
-       serializer = TransactionSerializer(data=request.data)
-       if serializer.is_valid():
-              serializer.save()
-       return Response(serializer.data)
-
-@api_view(['PUT'])
-def putStock(request, pk):
+@csrf_exempt
+def stock_detail(request, pk):
      try:
-          stocks = Stock.objects.get(pk=pk)
+          stock = Stock.objects.get(pk=pk)
      except Stock.DoesNotExist:
-        return Response({'message': 'Transaction não encontrada'}, status=404)
-     data = JSONParser().parse(request)
-     serializer = StockSerializer(stocks, data=data)
-     if serializer.is_valid():
+        return HttpResponse(status=404)
+
+     if request.method == 'GET':
+        serializer = StockSerializer(stock)
+        return JsonResponse(serializer.data)
+
+     elif request.method == 'PUT':
+        data = JSONParser().parse(request)
+        serializer = StockSerializer(stock, data=data)
+        if serializer.is_valid():
             serializer.save()
             return JsonResponse(serializer.data)
-     return JsonResponse(serializer.errors, status=400)
+        return JsonResponse(serializer.erros, status=400)   
+
+     elif request.method == 'DELETE':
+        stock.delete()
+        return HttpResponse(status=204)   
+
+@csrf_exempt
+def transaction_list(request):
+     if request.method == 'GET':
+          transactions = Transaction.objects.all()
+          serializer = TransactionSerializer(transactions, many=True, context={'request': request})
+          return JsonResponse(serializer.data, safe=False)
+     elif request.method == 'POST':
+          data = JSONParser().parse(request)
+          serializer = TransactionSerializer(data=data)
+          if serializer.is_valid():
+               serializer.save()
+               return JsonResponse(serializer.data, status=201)
+          return JsonResponse(serializer.erros, status=400)
+
+@csrf_exempt
+def transaction_detail(request, pk):
+     try:
+          transaction = Transaction.objects.get(pk=pk)
+     except Stock.DoesNotExist:
+        return HttpResponse(status=404)
+        '''
+        try:
+          transaction = Transaction.objects.get(pk=pk)
+        except Investor.DoesNotExist:
+            return HttpResponse(status=404)
 
 '''
-@api_view(['PUT'])
-def updateTransaction(request, pk):
-    try:
-        transaction = Transaction.objects.get(pk=pk)
-    except Transaction.DoesNotExist:
-        return Response({'message': 'Transaction não encontrada'}, status=404)
+     if request.method == 'GET':
+        serializer = StockSerializer(transaction)
+        return JsonResponse(serializer.data)
 
-    serializer = TransactionSerializer(transaction, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data)
+     elif request.method == 'PUT':
+        data = JSONParser().parse(request)
+        serializer = TransactionSerializer(transaction, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data)
+        return JsonResponse(serializer.erros, status=400)   
 
-    return Response(serializer.errors, status=400)
-'''
-
-@api_view(['PATCH'])
-def updateTransaction1(request, pk):
-    try:
-        transaction = Transaction.objects.get(pk=pk)
-    except Transaction.DoesNotExist:
-        return Response({'message': 'Transação não encontrada'}, status=404)
-
-    serializer = TransactionSerializer(transaction, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data)
-
-    return Response(serializer.errors, status=400)
-
-@api_view(['DELETE'])
-def deleteTransaction(request, pk):
-    try:
-        transaction = Transaction.objects.get(pk=pk)
-    except Transaction.DoesNotExist:
-        return Response({'message': 'Transação não encontrada'}, status=404)
-
-    transaction.delete()
-    return Response({'message': 'Transação excluída com sucesso'}, status=204)
+     elif request.method == 'DELETE':
+        transaction.delete()
+        return HttpResponse(status=204)    
 
 
 @api_view(['GET'])
