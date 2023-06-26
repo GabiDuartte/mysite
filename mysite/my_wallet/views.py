@@ -104,7 +104,7 @@ def transaction_list(request):
           if serializer.is_valid():
                serializer.save()
                return JsonResponse(serializer.data, status=201)
-          return JsonResponse(serializer.erros, status=400)
+          return JsonResponse(serializer.errors, status=400)
 
 @csrf_exempt
 def transaction_detail(request, pk):
@@ -120,7 +120,7 @@ def transaction_detail(request, pk):
 
 '''
      if request.method == 'GET':
-        serializer = StockSerializer(transaction)
+        serializer = TransactionSerializer(transaction)
         return JsonResponse(serializer.data)
 
      elif request.method == 'PUT':
@@ -129,7 +129,7 @@ def transaction_detail(request, pk):
         if serializer.is_valid():
             serializer.save()
             return JsonResponse(serializer.data)
-        return JsonResponse(serializer.erros, status=400)   
+        return JsonResponse(serializer.errors, status=400)   
 
      elif request.method == 'DELETE':
         transaction.delete()

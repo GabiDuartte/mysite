@@ -10,15 +10,15 @@ class InvestorSerializer(serializers.ModelSerializer):
 '''
 
 class StockSerializer(serializers.ModelSerializer):
+    transactions = serializers.HyperlinkedRelatedField(
+        many=True,
+        read_only=True,
+        view_name='transaction-detail'
+    )
+    
     class Meta:
         model = Stock
         fields = '__all__'
-
-        def validate(self, attrs):
-            code = attrs.get('code')
-            if not code:
-                raise serializers.ValidationError("O campo 'code' é obrigatório.")
-            return attrs
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
