@@ -143,10 +143,10 @@ def get_transactions_by_month_year(request, month, year):
     return JsonResponse(serializer.data, safe=False)
 
 @api_view(['GET'])
-def transacoes_investidor_stock(request, stock):
+def transacoes_investidor_stock(request, stock_code):
     investidor = request.user
     try:
-        stock = Stock.objects.get(code=stock)
+        stock = Stock.objects.get(code=stock_code)
     except Stock.DoesNotExist:
         return JsonResponse({'message': 'Ação não encontrada'}, status=404)
 
