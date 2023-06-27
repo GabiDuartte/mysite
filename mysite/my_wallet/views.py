@@ -1,9 +1,12 @@
 from django.shortcuts import render
 from .models import Stock, Transaction
-from. serializers import  StockSerializer, TransactionSerializer #InvestorSerializer
+from. serializers import  StockSerializer, TransactionSerializer, InvestorSerializer
+from accounts.models import Investor
+
 #from  mysite.accounts.models import Investor
 from django.http import JsonResponse
-from django.db.models import Sum
+from django.db.models import F, Sum
+from django.contrib.auth.decorators import login_required
 
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -13,8 +16,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.http import HttpResponse, JsonResponse
 
-'''
-@csfr_exempt
+
+@csrf_exempt
 def investor_list(request):
      if request.method == 'GET':
           investors = Investor.objects.all()
@@ -26,7 +29,7 @@ def investor_list(request):
           if serializer.is_valid():
                serializer.save()
                return JsonResponse(serializer.data, status=201)
-          return JsonResponse(serializer.erros, status=400)
+          return JsonResponse(serializer.errors, status=400)
 
 @csrf_exempt
 def investor_detail(request, pk):
@@ -41,20 +44,16 @@ def investor_detail(request, pk):
 
      elif request.method == 'PUT':
         data = JSONParser().parse(request)
-        serializer = InvestorSerializer(investor, data=data) 
-
-     elif request.method == 'PUT':
-        data = JSONParser().parse(request)
         serializer = InvestorSerializer(investor, data=data)
         if serializer.is_valid():
             serializer.save()
             return JsonResponse(serializer.data)
-        return JsonResponse(serializer.erros, status=400)   
+        return JsonResponse(serializer.errors, status=400)   
 
      elif request.method == 'DELETE':
         investor.delete()
         return HttpResponse(status=204)  
-'''
+
 @csrf_exempt
 def stock_list(request):
      if request.method == 'GET':
@@ -112,13 +111,13 @@ def transaction_detail(request, pk):
           transaction = Transaction.objects.get(pk=pk)
      except Stock.DoesNotExist:
         return HttpResponse(status=404)
-        '''
-        try:
+        
+     try:
           transaction = Transaction.objects.get(pk=pk)
-        except Investor.DoesNotExist:
+     except Investor.DoesNotExist:
             return HttpResponse(status=404)
 
-'''
+
      if request.method == 'GET':
         serializer = TransactionSerializer(transaction)
         return JsonResponse(serializer.data)
@@ -136,34 +135,41 @@ def transaction_detail(request, pk):
         return HttpResponse(status=204)    
 
 
+@login_required
 @api_view(['GET'])
 def get_transactions_by_month_year(request, month, year):
     transactions = Transaction.objects.filter(date__month=month, date__year=year, user=request.user).order_by('date')
     serializer = TransactionSerializer(transactions, many=True)
     return JsonResponse(serializer.data, safe=False)
 
-'''
-def transacoes_investidor_stock(request, codigo_stock):
+@api_view(['GET'])
+def transacoes_investidor_stock(request, stock):
     investidor = request.user
     try:
-        stock = Stock.objects.get(code=codigo_stock)
+        stock = Stock.objects.get(code=stock)
     except Stock.DoesNotExist:
         return JsonResponse({'message': 'Ação não encontrada'}, status=404)
 
-    transacoes = Transaction.objects.filter(user=investidor, stock=stock).order_by('date')
+    transactions = Transaction.objects.filter(user=investidor, stock=stock).order_by('date')
 
     resultados = []
 
-    for transacao in transacoes:
+    for transaction in transactions:
         resultado = {
-            'code': transacao.code,
-            'date': transacao.date,
-            'value': transacao.value,
-            'amount': transacao.amount,
-            'brokerage': transacao.brokerage,
-            'type': transacao.type,
-            'preco_medio': transacao.preco_medio(),
-            'lucro_prejuizo': transacao.lucro_prejuizo()
+            'user': transaction.user,
+            'stock': transaction.stock_id,
+            'code': transaction.code,
+            'date': transaction.date,
+            'value': float(transaction.value),
+            'amount': transaction.amount,
+            'brokerage': float(transaction.brokerage),
+            'type': transaction.type,
+            'preco_medio': float(transaction.preco_medio()),
+            'lucro_prejuizo': float(transaction.lucro_prejuizo()),
+            'taxa_b3': float(transaction.taxab3()),
+            'total_value': float(transaction.total_value()),
+            'total_taxas': float(transaction.total_taxas()),
+            'total_final': float(transaction.total_final())
         }
         resultados.append(resultado)
 
@@ -175,4 +181,37 @@ def transacoes_investidor_stock(request, codigo_stock):
     }
     return JsonResponse(data)
 
-'''
+
+@login_required
+@api_view(['GET'])
+def user_posicao(request):
+    user = request.user
+
+    positions = Transaction.objects.filter(user=user).values('stock').annotate(quant=Sum('amount'), preco_medio=Sum(F('amount')*F('value'))/Sum('amount'),valor_tot=F('amount')* F('value'))
+
+    posicoes_tot = []
+    lucro_prejuizo_tot = 0
+
+    for position in positions:
+        stock = Stock.objects.get(pk=position['stock'])
+        lucro_prejuizo = stock.preco_medio()*position['quant'] - position['valor_tot']
+
+    posicao_tot = {
+         'stock': stock.code,
+         'quantidade': position['quant'],
+         'preco_medio': float(position['preco_medio']),
+         'valor_total': float(position['valor_tot']),
+         'lucro_prejuizo': float(lucro_prejuizo)
+     }
+    
+    posicoes_tot.append(posicao_tot)
+    lucro_prejuizo_tot += lucro_prejuizo
+
+    wallet = {
+        'posicoes': posicao_tot,
+        'lucro_prjuizo_total': float(lucro_prejuizo_tot)
+    }
+
+    return JsonResponse(wallet)
+
+
