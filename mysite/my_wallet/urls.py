@@ -13,5 +13,7 @@ urlpatterns = [
     path('transaction/<int:pk>/', views.transaction_detail, name='add-transaction'),
     path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
     path('my-wallet/transactions/<int:month>/<int:year>/', views.get_transactions_by_month_year, name='transactions_by_month_year'),
-    path('transactions/<int:stock_code>/', views.transacoes_investidor_stock, name='transacoes')
+    path('transactions/<int:stock_code>/', views.transacoes_investidor_stock, name='transacoes'),
+    path('transactions/date-range/<str:start_date>/<str:end_date>/', views.get_transactions_by_date_range),
+    path('transactions/stock/<str:stock_code>/', views.get_transactions_by_stock),
 ]
