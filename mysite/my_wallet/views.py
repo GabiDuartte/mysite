@@ -214,4 +214,21 @@ def user_posicao(request):
 
     return JsonResponse(wallet)
 
+@api_view(['GET'])
+def get_transactions_by_date_range(request, start_date, end_date):
+    user = request.user
+    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    transactions = Transaction.objects.filter(date__range=[start_date, end_date], user=user).order_by('date')
+    serializer = TransactionSerializer(transactions, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def get_transactions_by_stock(request, stock_code):
+    user = request.user
+    stock = get_object_or_404(Stock, code=stock_code)
+    transactions = Transaction.objects.filter(stock=stock, user=user).order_by('date')
+    serializer = TransactionSerializer(transactions, many=True)
+    return Response(serializer.data)
+
 
